@@ -108,6 +108,23 @@ export async function jobRoutes(
     }
   );
 
+  // ── POST /jobs/:id/retry ──────────────────────────────────────────────────
+  fastify.post<{ Params: { id: string } }>(
+    "/jobs/:id/retry",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      try {
+        const result = await jobService.retryJob(request.params.id, request.user.userId);
+        return reply.status(202).send(result);
+      } catch (err) {
+        if (err instanceof AppError) {
+          return reply.status(err.statusCode).send({ error: err.code, message: err.message });
+        }
+        throw err;
+      }
+    }
+  );
+
   // ── GET /me/usage ─────────────────────────────────────────────────────────
   // Spec: { used_minutes, limit_minutes } only
   fastify.get(

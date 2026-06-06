@@ -414,42 +414,30 @@
     }
     .btn-secondary:hover { border-color: var(--text3); color: var(--text); }
 
-    /* ══════════════════════════════════════════
-       RIGHT PANEL (full analysis)
-    ══════════════════════════════════════════ */
-    #right-panel {
-      width: 300px; min-width: 300px;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      display: none; flex-direction: column;
-      overflow-y: auto; padding: 20px 16px;
-      gap: 12px;
+    /* ── Error state in done card ── */
+    #state-error {
+      flex-direction: column;
+      padding: 28px 28px 24px;
+      display: none;
     }
-    #right-panel.visible { display: flex; }
-    #right-panel::-webkit-scrollbar { width: 3px; }
-    #right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .rp-title {
-      font-size: 11px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: .07em; color: var(--text3);
-      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    .err-icon { font-size: 28px; margin-bottom: 12px; }
+    .err-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .err-msg {
+      font-size: 13px; color: var(--text2); line-height: 1.6;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 13px; margin-bottom: 18px;
+      word-break: break-word;
     }
-    .rp-section { padding: 0; }
-    .rp-label   { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin-bottom: 7px; }
-    .rp-summary { font-size: 13px; line-height: 1.72; color: var(--text); }
-
-    .rp-transcript {
-      font-size: 12px; line-height: 1.75; color: var(--text2);
-      max-height: 280px; overflow-y: auto; white-space: pre-wrap;
+    .err-actions { display: flex; gap: 8px; }
+    .btn-retry {
+      flex: 1; padding: 8px 16px;
+      background: var(--accent); color: white;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .rp-transcript::-webkit-scrollbar { width: 3px; }
-    .rp-transcript::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .rp-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
-
-    .rp-actions { display: flex; flex-direction: column; gap: 5px; }
-    .rp-action  { display: flex; gap: 7px; align-items: flex-start; font-size: 12px; color: var(--text2); line-height: 1.5; }
-    .rp-action::before { content: '→'; color: var(--accent); font-size: 12px; flex-shrink: 0; }
+    .btn-retry:hover { opacity: .88; }
+    .btn-retry:disabled { opacity: .5; cursor: not-allowed; }
 
     /* ══════════════════════════════════════════
        PROFILE POPUP
@@ -683,47 +671,21 @@
     <div class="transcript-body" id="tt-body"></div>
 
     <div class="done-actions">
-      <button class="btn-primary" onclick="openFullAnalysis()">Полный анализ →</button>
       <button class="btn-secondary" onclick="resetToIdle()">Новый файл</button>
     </div>
   </div>
 
-</div>
-
-<!-- ════════════════════
-     RIGHT PANEL
-════════════════════ -->
-<div id="right-panel">
-  <div class="rp-title">Полный анализ</div>
-
-  <div class="rp-section">
-    <div class="rp-label">Резюме</div>
-    <div class="rp-summary" id="rp-summary"></div>
+  <!-- State: Error -->
+  <div class="state-card" id="state-error">
+    <div class="err-icon">⚠️</div>
+    <div class="err-title">Ошибка обработки</div>
+    <div class="err-msg" id="err-msg">—</div>
+    <div class="err-actions">
+      <button class="btn-retry" id="btn-retry" onclick="retryCurrentJob()">↺ Повторить</button>
+      <button class="btn-secondary" onclick="resetToIdle()">Новый файл</button>
+    </div>
   </div>
 
-  <hr class="rp-divider"/>
-
-  <div class="rp-section">
-    <div class="rp-label">Тональность</div>
-    <div id="rp-sentiment"></div>
-  </div>
-
-  <div class="rp-section">
-    <div class="rp-label">Темы</div>
-    <div class="topics-wrap" id="rp-topics"></div>
-  </div>
-
-  <div class="rp-section">
-    <div class="rp-label">Задачи</div>
-    <div class="rp-actions" id="rp-actions"></div>
-  </div>
-
-  <hr class="rp-divider"/>
-
-  <div class="rp-section">
-    <div class="rp-label">Транскрипт</div>
-    <div class="rp-transcript" id="rp-transcript"></div>
-  </div>
 </div>
 
 <!-- ════════════════════
@@ -876,8 +838,9 @@ async function upload(file) {
 
 // ── State transitions ──────────────────────────────────────────────────────
 function setStateIdle() {
-  show('state-idle'); hide('state-processing'); hide('state-done');
+  show('state-idle'); hide('state-processing'); hide('state-done'); hide('state-error');
   document.getElementById('file-input').value = '';
+  hideEl('upload-error');
 }
 
 function setStateProcessing(file) {
@@ -889,7 +852,8 @@ function setStateProcessing(file) {
 }
 
 function setStateDone(job) {
-  hide('state-idle'); hide('state-processing'); show('state-done');
+  hide('state-idle'); hide('state-processing'); hide('state-error');
+  show('state-done');
   const r = job.report || {};
   document.getElementById('done-filename').textContent = job.filename || '';
   document.getElementById('done-summary').textContent  = r.summary || '—';
@@ -910,11 +874,16 @@ function setStateDone(job) {
   document.getElementById('tt-body').textContent = job.transcript || '—';
 }
 
+function setStateError(msg) {
+  hide('state-idle'); hide('state-processing'); hide('state-done');
+  show('state-error');
+  document.getElementById('err-msg').textContent = msg || 'Неизвестная ошибка';
+}
+
 function resetToIdle() {
   stopPoll();
   setStateIdle();
   document.querySelectorAll('.job-row').forEach(e=>e.classList.remove('active'));
-  document.getElementById('right-panel').classList.remove('visible');
   currentJob = null;
 }
 
@@ -977,13 +946,13 @@ async function poll(jobId, filename) {
     }
     if (d.status === 'error') {
       stopPoll();
-      setStateIdle();
-      showErr('upload-error', d.errorMessage || 'Ошибка обработки');
+      setStateError(d.errorMessage || 'Ошибка обработки');
+      updateSidebarDot(jobId, 'error');
+      refreshUsage();
     }
   } catch(e) {
     stopPoll();
-    setStateIdle();
-    showErr('upload-error', 'Ошибка соединения: '+e.message);
+    setStateError('Ошибка соединения: ' + e.message);
   }
 }
 
@@ -996,32 +965,31 @@ function toggleTranscript() {
   tog.classList.toggle('open', !open);
 }
 
-// ── Right panel ────────────────────────────────────────────────────────────
-function openFullAnalysis() {
+// ── Retry ──────────────────────────────────────────────────────────────────
+async function retryCurrentJob() {
   if (!currentJob) return;
-  const job = jobCache[currentJob.id];
-  if (!job) return;
-  fillRightPanel(job);
-  document.getElementById('right-panel').classList.add('visible');
-}
+  const btn = document.getElementById('btn-retry');
+  btn.disabled = true;
+  btn.textContent = '↺ Повтор…';
 
-function fillRightPanel(job) {
-  const r = job.report || {};
-  document.getElementById('rp-summary').textContent = r.summary || '—';
-  document.getElementById('rp-transcript').textContent = job.transcript || '—';
+  try {
+    const r = await fetch(`/jobs/${currentJob.id}/retry`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || 'Ошибка повтора');
 
-  const sentMap = {positive:'Позитивная',neutral:'Нейтральная',negative:'Негативная'};
-  const s = r.sentiment||'neutral';
-  document.getElementById('rp-sentiment').innerHTML =
-    `<span class="sentiment-tag sent-${s}">${sentMap[s]||s}</span>`;
-
-  document.getElementById('rp-topics').innerHTML =
-    (r.topics||[]).map(t=>`<span class="topic-chip">${esc(t)}</span>`).join('') ||
-    '<span style="color:var(--text3);font-size:11px">—</span>';
-
-  document.getElementById('rp-actions').innerHTML =
-    (r.action_items||[]).map(a=>`<div class="rp-action">${esc(a)}</div>`).join('') ||
-    '<span style="color:var(--text3);font-size:12px">Нет задач</span>';
+    // Switch back to processing view
+    setStateProcessing({ name: currentJob.filename || '', size: 0 });
+    updateSidebarDot(currentJob.id, 'processing');
+    startPoll(currentJob.id, currentJob.filename);
+  } catch(e) {
+    document.getElementById('err-msg').textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↺ Повторить';
+  }
 }
 
 // ── Sidebar jobs ───────────────────────────────────────────────────────────
@@ -1095,9 +1063,11 @@ async function openFromSidebar(jobId, filename) {
     d.filename = filename;
     jobCache[jobId] = d;
     currentJob = { id: jobId, filename };
+    d.filename = filename;
+    jobCache[jobId] = d;
 
-    if (d.status === 'done') { setStateDone(d); document.getElementById('right-panel').classList.remove('visible'); }
-    else if (d.status === 'error') { setStateIdle(); showErr('upload-error', d.errorMessage||'Ошибка обработки'); }
+    if (d.status === 'done')  { setStateDone(d); }
+    else if (d.status === 'error') { setStateError(d.errorMessage || 'Ошибка обработки'); }
     else { setStateProcessing({name:filename,size:0}); startPoll(jobId, filename); }
   } catch(e) { setStateIdle(); showErr('upload-error', e.message); }
 }
@@ -1205,7 +1175,11 @@ async function refreshUsage() {
 }
 
 // ── Utils ──────────────────────────────────────────────────────────────────
-function show(id) { document.getElementById(id).style.display='flex'; }
+function show(id) {
+  const el = document.getElementById(id);
+  // cards use flex; error state uses flex too
+  el.style.display = 'flex';
+}
 function hide(id) { document.getElementById(id).style.display='none'; }
 function showErr(id,msg) { const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; }
 function hideEl(id) { document.getElementById(id).style.display='none'; }

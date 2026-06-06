@@ -161,6 +161,49 @@ export class JobService {
     };
   }
 
+  async retryJob(jobId: string, userId: string): Promise<{ jobId: string }> {
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+
+    if (!job) throw new AppError("NOT_FOUND", "Job not found", 404);
+    if (job.userId !== userId) throw new AppError("FORBIDDEN", "Access denied", 403);
+
+    // Only failed jobs can be retried
+    if (job.status !== "error") {
+      throw new AppError(
+        "INVALID_STATE",
+        `Cannot retry a job with status "${job.status}". Only failed jobs can be retried.`,
+        400
+      );
+    }
+
+    // Check the file still exists on disk
+    if (!fs.existsSync(job.filePath)) {
+      throw new AppError(
+        "FILE_MISSING",
+        "Original audio file no longer exists on disk. Please upload the file again.",
+        410
+      );
+    }
+
+    // Reset job back to processing
+    await this.prisma.job.update({
+      where: { id: jobId },
+      data: {
+        status:       "processing",
+        errorMessage: null,
+        transcript:   null,
+        report:       null,
+      },
+    });
+
+    // Re-run pipeline
+    this.pipeline.run(jobId).catch((err) => {
+      console.error(`[job-service] Unhandled pipeline error on retry for job ${jobId}:`, err);
+    });
+
+    return { jobId };
+  }
+
   async getUsage(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError("UNAUTHORIZED", "User not found", 401);

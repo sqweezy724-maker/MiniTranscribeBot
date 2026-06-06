@@ -3,26 +3,24 @@
   "version": "1.0.0",
   "description": "Audio Processing SaaS — upload, transcribe, analyze with LLM",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev --name init",
-    "db:migrate:prod": "prisma migrate deploy",
+    "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
+    "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:test:push": "DATABASE_URL=file:./test.db prisma db push --force-reset && DATABASE_URL=file:./test-api.db prisma db push --force-reset && DATABASE_URL=file:./test-pipeline.db prisma db push --force-reset && DATABASE_URL=file:./test-job-service.db prisma db push --force-reset",
+    "db:test:push": "for db in test-api test-pipeline test-job-service test-list-jobs test-retry; do DATABASE_URL=\"file:./prisma/${db}.db\" prisma db push; done",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
-  "keywords": [
-    "audio",
-    "transcription",
-    "llm",
-    "saas"
-  ],
+  "keywords": ["audio", "transcription", "llm", "saas"],
   "author": "",
   "license": "ISC",
   "dependencies": {
