@@ -66,30 +66,52 @@
       flex-direction: column;
       padding: 0;
       overflow: hidden;
-      transition: width .2s ease, min-width .2s ease;
+      transition: width .22s ease, min-width .22s ease, box-shadow .22s;
       flex-shrink: 0;
       z-index: 20;
     }
+
+    /* collapsed = narrow strip */
     #sidebar.collapsed {
       width: var(--sidebar-col);
       min-width: var(--sidebar-col);
     }
-    /* hover expand — only the thin strip triggers it */
-    #sidebar.collapsed:hover {
+
+    /* expanded by JS hover (NOT CSS :hover — avoids collapse button bug) */
+    #sidebar.collapsed.sb-hover {
       width: var(--sidebar-w);
       min-width: var(--sidebar-w);
       box-shadow: var(--shadow-md);
     }
 
-    /* hide labels when collapsed (not hovered) */
-    #sidebar.collapsed:not(:hover) .sb-label,
-    #sidebar.collapsed:not(:hover) .sb-item-text,
-    #sidebar.collapsed:not(:hover) .sb-logo-text,
-    #sidebar.collapsed:not(:hover) .sb-profile-info,
-    #sidebar.collapsed:not(:hover) .sb-section-title,
-    #sidebar.collapsed:not(:hover) .sb-empty {
-      opacity: 0; max-width: 0; overflow: hidden; white-space: nowrap;
-      pointer-events: none; transition: none;
+    /* hide text in collapsed + NOT hovered state */
+    #sidebar.collapsed:not(.sb-hover) .sb-logo-text,
+    #sidebar.collapsed:not(.sb-hover) .sb-profile-info,
+    #sidebar.collapsed:not(.sb-hover) .sb-item-text,
+    #sidebar.collapsed:not(.sb-hover) .sb-section-title,
+    #sidebar.collapsed:not(.sb-hover) .sb-empty,
+    #sidebar.collapsed:not(.sb-hover) .job-row-info {
+      display: none;
+    }
+
+    /* every row in collapsed strip: fixed width = sidebar-col, centered icon */
+    #sidebar.collapsed:not(.sb-hover) .sb-header,
+    #sidebar.collapsed:not(.sb-hover) .sb-profile,
+    #sidebar.collapsed:not(.sb-hover) .sb-item,
+    #sidebar.collapsed:not(.sb-hover) .job-row {
+      width: var(--sidebar-col);
+      padding: 0;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+
+    /* dot: restore normal size — no enlargement */
+    #sidebar.collapsed:not(.sb-hover) .job-dot {
+      width: 8px;
+      height: 8px;
     }
 
     /* ── Sidebar header ── */
@@ -119,6 +141,13 @@
     }
     .sb-collapse:hover { background: var(--border); color: var(--text); }
     #sidebar.collapsed .sb-collapse { transform: rotate(180deg); }
+    #sidebar.collapsed:not(.sb-hover) .sb-collapse {
+      opacity: 0; pointer-events: none;
+    }
+    /* strip nav wrapper padding */
+    #sidebar.collapsed:not(.sb-hover) .sb-nav {
+      padding: 4px 0;
+    }
 
     /* ── Profile row ── */
     .sb-profile {
@@ -168,7 +197,8 @@
       padding: 12px 12px 4px;
       transition: opacity .15s, max-width .15s;
     }
-    #jobs-list { flex: 1; overflow-y: auto; padding: 2px 6px 8px; }
+    #jobs-list { flex: 1; overflow-y: auto; padding: 2px 6px 8px; overflow-x: hidden; }
+    #sidebar.collapsed:not(.sb-hover) #jobs-list { padding: 2px 0 8px; }
     #jobs-list::-webkit-scrollbar { width: 3px; }
     #jobs-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
@@ -564,7 +594,7 @@
   <div class="sb-header">
     <div class="sb-logo-icon">🎙</div>
     <span class="sb-logo-text">AudioMind</span>
-    <button class="sb-collapse" onclick="toggleSidebar()" title="Collapse sidebar">◀</button>
+    <button class="sb-collapse" onclick="toggleSidebar(event)" title="Collapse sidebar">◀</button>
   </div>
 
   <div class="sb-profile" onclick="handleProfileClick(event)">
@@ -757,6 +787,7 @@ const STOP_MS    = 10 * 60 * 1000;
 // ── Boot ───────────────────────────────────────────────────────────────────
 (function() {
   if (sbCollapsed) document.getElementById('sidebar').classList.add('collapsed');
+  setupSidebarHover();
   setupDrop();
   document.getElementById('file-input').addEventListener('change', onFile);
 
@@ -779,11 +810,27 @@ const STOP_MS    = 10 * 60 * 1000;
 })();
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
-function toggleSidebar() {
+function toggleSidebar(e) {
+  if (e) e.stopPropagation();
   sbCollapsed = !sbCollapsed;
-  document.getElementById('sidebar').classList.toggle('collapsed', sbCollapsed);
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed', sbCollapsed);
+  // always remove hover class so collapse takes effect immediately
+  sb.classList.remove('sb-hover');
   localStorage.setItem('sb_col', sbCollapsed ? '1' : '0');
   if (popupOpen) repositionPopup();
+}
+
+function setupSidebarHover() {
+  const sb = document.getElementById('sidebar');
+
+  sb.addEventListener('mouseenter', () => {
+    if (sbCollapsed) sb.classList.add('sb-hover');
+  });
+
+  sb.addEventListener('mouseleave', () => {
+    sb.classList.remove('sb-hover');
+  });
 }
 
 // ── Drop zone ──────────────────────────────────────────────────────────────
@@ -1046,29 +1093,20 @@ async function openFromSidebar(jobId, filename) {
   document.querySelectorAll('.job-row').forEach(e=>e.classList.remove('active'));
   document.getElementById('jr-'+jobId)?.classList.add('active');
 
-  const cached = jobCache[jobId];
-  if (cached && cached.status === 'done') {
-    cached.filename = filename;
-    currentJob = { id: jobId, filename };
-    setStateDone(cached);
-    document.getElementById('right-panel').classList.remove('visible');
-    return;
-  }
+  currentJob = { id: jobId, filename };
 
-  // fetch fresh
+  // Always fetch the full job — the list cache has no report/transcript fields
   try {
     const r = await fetch('/jobs/'+jobId, { headers:{Authorization:'Bearer '+token} });
     const d = await r.json();
     if (!r.ok) throw new Error(d.message);
-    d.filename = filename;
-    jobCache[jobId] = d;
-    currentJob = { id: jobId, filename };
+
     d.filename = filename;
     jobCache[jobId] = d;
 
-    if (d.status === 'done')  { setStateDone(d); }
+    if (d.status === 'done')       { setStateDone(d); }
     else if (d.status === 'error') { setStateError(d.errorMessage || 'Processing failed'); }
-    else { setStateProcessing({name:filename,size:0}); startPoll(jobId, filename); }
+    else                           { setStateProcessing({name:filename,size:0}); startPoll(jobId, filename); }
   } catch(e) { setStateIdle(); showErr('upload-error', e.message); }
 }
 
