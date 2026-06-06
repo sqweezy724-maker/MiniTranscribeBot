@@ -95,7 +95,6 @@
     }
 
     /* every row in collapsed strip: fixed width = sidebar-col, centered icon */
-    #sidebar.collapsed:not(.sb-hover) .sb-header,
     #sidebar.collapsed:not(.sb-hover) .sb-profile,
     #sidebar.collapsed:not(.sb-hover) .sb-item,
     #sidebar.collapsed:not(.sb-hover) .job-row {
@@ -105,6 +104,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 0;
+    }
+
+    /* header: keep its own padding/layout — just hide the text and button */
+    #sidebar.collapsed:not(.sb-hover) .sb-header {
+      padding: 14px 10px;
       gap: 0;
     }
 
