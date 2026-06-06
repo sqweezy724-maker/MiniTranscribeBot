@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -564,27 +564,27 @@
   <div class="sb-header">
     <div class="sb-logo-icon">🎙</div>
     <span class="sb-logo-text">AudioMind</span>
-    <button class="sb-collapse" onclick="toggleSidebar()" title="Свернуть">◀</button>
+    <button class="sb-collapse" onclick="toggleSidebar()" title="Collapse sidebar">◀</button>
   </div>
 
   <div class="sb-profile" onclick="handleProfileClick(event)">
     <div class="sb-avatar guest" id="sb-avatar">?</div>
     <div class="sb-profile-info">
-      <div class="sb-profile-name" id="sb-name">Не вошли</div>
-      <div class="sb-profile-sub"  id="sb-sub">Нажмите для входа</div>
+      <div class="sb-profile-name" id="sb-name">Not signed in</div>
+      <div class="sb-profile-sub"  id="sb-sub">Click to sign in</div>
     </div>
   </div>
 
   <div class="sb-nav">
     <div class="sb-item" onclick="handleNewUpload()">
       <div class="sb-item-icon">＋</div>
-      <span class="sb-item-text">Новая загрузка</span>
+      <span class="sb-item-text">New Upload</span>
     </div>
   </div>
 
-  <div class="sb-section-title">История</div>
+  <div class="sb-section-title">History</div>
   <div id="jobs-list">
-    <div class="sb-empty">Нет загрузок</div>
+    <div class="sb-empty">No uploads yet</div>
   </div>
 </aside>
 
@@ -598,10 +598,10 @@
     <div class="upload-zone" id="upload-zone">
       <input type="file" id="file-input" accept=".mp3,.wav,.m4a,.ogg,.flac"/>
       <div class="uz-icon">🎵</div>
-      <div class="uz-title">Загрузите аудио для анализа</div>
+      <div class="uz-title">Upload audio for analysis</div>
       <div class="uz-sub">
-        Перетащите файл или <b>выберите вручную</b><br>
-        Анализ начнётся автоматически
+        Drop a file or <b>browse</b> to choose —<br>
+        analysis starts automatically
       </div>
       <div class="uz-formats">
         <span class="uz-fmt">mp3</span>
@@ -609,7 +609,7 @@
         <span class="uz-fmt">m4a</span>
         <span class="uz-fmt">ogg</span>
         <span class="uz-fmt">flac</span>
-        <span class="uz-limit">⏱ не более 10 мин на файл</span>
+        <span class="uz-limit">⏱ max 10 min per file</span>
       </div>
     </div>
     <div id="upload-error"></div>
@@ -620,7 +620,7 @@
     <div class="proc-file">
       <div class="proc-file-icon">🎵</div>
       <div>
-        <div class="proc-file-name" id="proc-name">файл.mp3</div>
+        <div class="proc-file-name" id="proc-name">file.mp3</div>
         <div class="proc-file-size" id="proc-size"></div>
       </div>
     </div>
@@ -632,57 +632,57 @@
     </div>
 
     <div class="proc-steps">
-      <div class="proc-step done" id="pstep-upload">📤 Загружен</div>
+      <div class="proc-step done" id="pstep-upload">📤 Uploaded</div>
       <div class="proc-sep">›</div>
-      <div class="proc-step" id="pstep-transcribe">🎙 Транскрипция</div>
+      <div class="proc-step" id="pstep-transcribe">🎙 Transcription</div>
       <div class="proc-sep">›</div>
-      <div class="proc-step" id="pstep-analyze">🤖 Анализ</div>
+      <div class="proc-step" id="pstep-analyze">🤖 Analysis</div>
     </div>
-    <div class="proc-status" id="proc-status">Обрабатываем аудио…</div>
+    <div class="proc-status" id="proc-status">Processing audio…</div>
   </div>
 
   <!-- State 3: Done -->
   <div class="state-card" id="state-done" style="display:none">
     <div class="done-header">
       <div class="done-filename" id="done-filename"></div>
-      <div class="done-badge">✓ Готово</div>
+      <div class="done-badge">✓ Done</div>
     </div>
     <div class="done-summary" id="done-summary"></div>
 
     <div class="insight-grid">
       <div class="insight-cell">
-        <div class="ic-label">Тональность</div>
+        <div class="ic-label">Sentiment</div>
         <div id="done-sentiment"></div>
       </div>
       <div class="insight-cell">
-        <div class="ic-label">Темы</div>
+        <div class="ic-label">Topics</div>
         <div class="topics-wrap" id="done-topics"></div>
       </div>
       <div class="insight-cell" style="grid-column:1/-1; border-radius:0 0 0 0;">
-        <div class="ic-label">Задачи</div>
+        <div class="ic-label">Action items</div>
         <div class="actions-mini" id="done-actions"></div>
       </div>
     </div>
 
     <div class="transcript-toggle" id="tt-toggle" onclick="toggleTranscript()">
-      <span>Транскрипт</span>
+      <span>Transcript</span>
       <span class="tt-chevron">▼</span>
     </div>
     <div class="transcript-body" id="tt-body"></div>
 
     <div class="done-actions">
-      <button class="btn-secondary" onclick="resetToIdle()">Новый файл</button>
+      <button class="btn-secondary" onclick="resetToIdle()">New file</button>
     </div>
   </div>
 
   <!-- State: Error -->
   <div class="state-card" id="state-error">
     <div class="err-icon">⚠️</div>
-    <div class="err-title">Ошибка обработки</div>
+    <div class="err-title">Processing failed</div>
     <div class="err-msg" id="err-msg">—</div>
     <div class="err-actions">
-      <button class="btn-retry" id="btn-retry" onclick="retryCurrentJob()">↺ Повторить</button>
-      <button class="btn-secondary" onclick="resetToIdle()">Новый файл</button>
+      <button class="btn-retry" id="btn-retry" onclick="retryCurrentJob()">↺ Retry</button>
+      <button class="btn-secondary" onclick="resetToIdle()">New file</button>
     </div>
   </div>
 
@@ -698,13 +698,13 @@
   </div>
   <div class="pp-body">
     <div class="pp-usage-row">
-      <span>Использовано</span>
-      <span id="pp-usage">0 / 30 мин</span>
+      <span>Used</span>
+      <span id="pp-usage">0 / 30 min</span>
     </div>
     <div class="pp-track">
       <div class="pp-fill" id="pp-fill" style="width:0%"></div>
     </div>
-    <button class="pp-logout" onclick="logout()">Выйти</button>
+    <button class="pp-logout" onclick="logout()">Sign out</button>
   </div>
 </div>
 
@@ -717,12 +717,12 @@
       <div class="am-logo-icon">🎙</div>
       <span class="am-logo-text">AudioMind</span>
     </div>
-    <div class="am-title" id="am-title">С возвращением</div>
-    <div class="am-sub"   id="am-sub">Войдите, чтобы начать анализ</div>
+    <div class="am-title" id="am-title">Welcome back</div>
+    <div class="am-sub"   id="am-sub">Sign in to start analyzing audio</div>
 
     <div class="am-tabs">
-      <button class="am-tab active" id="tab-login"    onclick="switchTab('login')">Войти</button>
-      <button class="am-tab"        id="tab-register" onclick="switchTab('register')">Регистрация</button>
+      <button class="am-tab active" id="tab-login"    onclick="switchTab('login')">Sign in</button>
+      <button class="am-tab"        id="tab-register" onclick="switchTab('register')">Register</button>
     </div>
 
     <div class="am-field">
@@ -730,10 +730,10 @@
       <input class="am-input" type="email" id="am-email" placeholder="you@example.com"/>
     </div>
     <div class="am-field">
-      <label class="am-label" for="am-pass">Пароль</label>
+      <label class="am-label" for="am-pass">Password</label>
       <input class="am-input" type="password" id="am-pass" placeholder="••••••••"/>
     </div>
-    <button id="auth-submit" onclick="handleAuth()">Войти</button>
+    <button id="auth-submit" onclick="handleAuth()">Sign in</button>
     <div class="am-error" id="am-error"></div>
   </div>
 </div>
@@ -823,7 +823,7 @@ async function upload(file) {
   try {
     const r = await fetch('/jobs', { method:'POST', headers:{Authorization:'Bearer '+token}, body:fd });
     data = await r.json();
-    if (!r.ok) throw new Error(data.message || 'Ошибка загрузки');
+    if (!r.ok) throw new Error(data.message || 'Upload failed');
   } catch(e) {
     setStateIdle();
     showErr('upload-error', e.message);
@@ -846,8 +846,8 @@ function setStateIdle() {
 function setStateProcessing(file) {
   hide('state-idle'); show('state-processing'); hide('state-done');
   document.getElementById('proc-name').textContent = file.name;
-  document.getElementById('proc-size').textContent = (file.size/1024/1024).toFixed(2)+' МБ';
-  document.getElementById('proc-status').textContent = 'Загрузка завершена, запускаем транскрипцию…';
+  document.getElementById('proc-size').textContent = (file.size/1024/1024).toFixed(2)+' MB';
+  document.getElementById('proc-status').textContent = 'Upload complete, starting transcription…';
   setStep('upload');
 }
 
@@ -858,7 +858,7 @@ function setStateDone(job) {
   document.getElementById('done-filename').textContent = job.filename || '';
   document.getElementById('done-summary').textContent  = r.summary || '—';
 
-  const sentMap = {positive:'Позитивная',neutral:'Нейтральная',negative:'Негативная'};
+  const sentMap = {positive:'Positive',neutral:'Neutral',negative:'Negative'};
   const s = r.sentiment || 'neutral';
   document.getElementById('done-sentiment').innerHTML =
     `<span class="sentiment-tag sent-${s}">${sentMap[s]||s}</span>`;
@@ -869,7 +869,7 @@ function setStateDone(job) {
 
   document.getElementById('done-actions').innerHTML =
     (r.action_items||[]).length ? r.action_items.map(a=>`<div class="action-mini">${esc(a)}</div>`).join('') :
-    '<span style="color:var(--text3);font-size:12px">Нет задач</span>';
+    '<span style="color:var(--text3);font-size:12px">No action items</span>';
 
   document.getElementById('tt-body').textContent = job.transcript || '—';
 }
@@ -877,7 +877,7 @@ function setStateDone(job) {
 function setStateError(msg) {
   hide('state-idle'); hide('state-processing'); hide('state-done');
   show('state-error');
-  document.getElementById('err-msg').textContent = msg || 'Неизвестная ошибка';
+  document.getElementById('err-msg').textContent = msg || 'Unknown error';
 }
 
 function resetToIdle() {
@@ -920,11 +920,11 @@ async function poll(jobId, filename) {
   if (elapsed > STOP_MS) {
     stopPoll();
     setStateIdle();
-    showErr('upload-error', 'Обработка превысила 10 минут. Попробуйте позже.');
+    showErr('upload-error', 'Processing timed out after 10 minutes. Please try again.');
     return;
   }
   if (elapsed > WARN_MS) {
-    document.getElementById('proc-status').textContent = 'Обработка занимает больше времени, чем обычно…';
+    document.getElementById('proc-status').textContent = 'Taking longer than usual…';
   }
 
   try {
@@ -936,8 +936,8 @@ async function poll(jobId, filename) {
     jobCache[jobId] = d;
     updateSidebarDot(jobId, d.status);
 
-    if (d.status === 'processing')  { setStep('transcribe'); document.getElementById('proc-status').textContent = 'Транскрибируем речь…'; }
-    if (d.status === 'transcribed') { setStep('analyze');    document.getElementById('proc-status').textContent = 'Анализируем с помощью AI…'; }
+    if (d.status === 'processing')  { setStep('transcribe'); document.getElementById('proc-status').textContent = 'Transcribing audio…'; }
+    if (d.status === 'transcribed') { setStep('analyze');    document.getElementById('proc-status').textContent = 'Analyzing with AI…'; }
 
     if (d.status === 'done') {
       stopPoll();
@@ -946,13 +946,13 @@ async function poll(jobId, filename) {
     }
     if (d.status === 'error') {
       stopPoll();
-      setStateError(d.errorMessage || 'Ошибка обработки');
+      setStateError(d.errorMessage || 'Processing failed');
       updateSidebarDot(jobId, 'error');
       refreshUsage();
     }
   } catch(e) {
     stopPoll();
-    setStateError('Ошибка соединения: ' + e.message);
+    setStateError('Connection error: ' + e.message);
   }
 }
 
@@ -978,7 +978,7 @@ async function retryCurrentJob() {
       headers: { Authorization: 'Bearer ' + token },
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.message || 'Ошибка повтора');
+    if (!r.ok) throw new Error(d.message || 'Retry failed');
 
     // Switch back to processing view
     setStateProcessing({ name: currentJob.filename || '', size: 0 });
@@ -988,7 +988,7 @@ async function retryCurrentJob() {
     document.getElementById('err-msg').textContent = e.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = '↺ Повторить';
+    btn.textContent = '↺ Retry';
   }
 }
 
@@ -1025,7 +1025,7 @@ async function loadHistory() {
     const {jobs} = await r.json();
     const list = document.getElementById('jobs-list');
     list.innerHTML = '';
-    if (!jobs.length) { list.innerHTML='<div class="sb-empty">Нет загрузок</div>'; return; }
+    if (!jobs.length) { list.innerHTML='<div class="sb-empty">No uploads yet</div>'; return; }
     jobs.forEach(j => {
       jobCache[j.id] = j;
       const el = document.createElement('div');
@@ -1067,7 +1067,7 @@ async function openFromSidebar(jobId, filename) {
     jobCache[jobId] = d;
 
     if (d.status === 'done')  { setStateDone(d); }
-    else if (d.status === 'error') { setStateError(d.errorMessage || 'Ошибка обработки'); }
+    else if (d.status === 'error') { setStateError(d.errorMessage || 'Processing failed'); }
     else { setStateProcessing({name:filename,size:0}); startPoll(jobId, filename); }
   } catch(e) { setStateIdle(); showErr('upload-error', e.message); }
 }
@@ -1109,19 +1109,19 @@ function switchTab(t) {
   authTab = t;
   document.getElementById('tab-login').classList.toggle('active', t==='login');
   document.getElementById('tab-register').classList.toggle('active', t==='register');
-  document.getElementById('am-title').textContent  = t==='login' ? 'С возвращением'        : 'Создать аккаунт';
-  document.getElementById('am-sub').textContent    = t==='login' ? 'Войдите, чтобы начать анализ' : 'Бесплатно · 30 минут аудио';
-  document.getElementById('auth-submit').textContent = t==='login' ? 'Войти' : 'Создать аккаунт';
+  document.getElementById('am-title').textContent  = t==='login' ? 'Welcome back'        : 'Create account';
+  document.getElementById('am-sub').textContent    = t==='login' ? 'Sign in to analyze audio' : 'Free · 30 minutes of audio';
+  document.getElementById('auth-submit').textContent = t==='login' ? 'Sign in' : 'Create account';
   document.getElementById('am-error').style.display = 'none';
 }
 
 async function handleAuth() {
   const email = document.getElementById('am-email').value.trim();
   const pass  = document.getElementById('am-pass').value;
-  if (!email||!pass) { showErr('am-error','Введите email и пароль'); return; }
+  if (!email||!pass) { showErr('am-error','Please enter email and password'); return; }
 
   const btn = document.getElementById('auth-submit');
-  btn.disabled=true; btn.textContent = authTab==='login' ? 'Входим…':'Создаём…';
+  btn.disabled=true; btn.textContent = authTab==='login' ? 'Signing in…':'Creating account…';
 
   try {
     const r = await fetch(authTab==='login'?'/auth/login':'/auth/register', {
@@ -1129,12 +1129,12 @@ async function handleAuth() {
       body: JSON.stringify({email,password:pass})
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.message||'Ошибка');
+    if (!r.ok) throw new Error(d.message||'Authentication failed');
     token = d.token; localStorage.setItem('at',token);
     hideAuth(); updateSidebar(); refreshUsage(); loadHistory();
     if (pendingFile) { const f=pendingFile; pendingFile=null; upload(f); }
   } catch(e) { showErr('am-error',e.message); }
-  finally { btn.disabled=false; btn.textContent=authTab==='login'?'Войти':'Создать аккаунт'; }
+  finally { btn.disabled=false; btn.textContent=authTab==='login'?'Sign in':'Create account'; }
 }
 
 function logout() {
@@ -1142,7 +1142,7 @@ function logout() {
   stopPoll(); closePopup(); resetToIdle();
   jobCache={}; pendingFile=null; currentJob=null;
   updateSidebar();
-  document.getElementById('jobs-list').innerHTML='<div class="sb-empty">Нет загрузок</div>';
+  document.getElementById('jobs-list').innerHTML='<div class="sb-empty">No uploads yet</div>';
 }
 
 // ── Sidebar auth state ─────────────────────────────────────────────────────
@@ -1153,12 +1153,12 @@ function updateSidebar() {
   if (token) {
     let em='?'; try { em=JSON.parse(atob(token.split('.')[1])).email; } catch{}
     av.textContent=em[0].toUpperCase(); av.className='sb-avatar';
-    nm.textContent=em; sb.textContent='Профиль и использование';
+    nm.textContent=em; sb.textContent='Profile & usage';
     document.getElementById('pp-avatar').textContent=em[0].toUpperCase();
     document.getElementById('pp-email').textContent=em;
   } else {
     av.textContent='?'; av.className='sb-avatar guest';
-    nm.textContent='Не вошли'; sb.textContent='Нажмите для входа';
+    nm.textContent='Not signed in'; sb.textContent='Click to sign in';
   }
 }
 
@@ -1168,9 +1168,9 @@ async function refreshUsage() {
     const r = await fetch('/me/usage',{headers:{Authorization:'Bearer '+token}});
     const d = await r.json(); if (!r.ok) return;
     const pct = Math.min(100,(d.used_minutes/d.limit_minutes)*100).toFixed(1);
-    document.getElementById('pp-usage').textContent=`${d.used_minutes} / ${d.limit_minutes} мин`;
+    document.getElementById('pp-usage').textContent=`${d.used_minutes} / ${d.limit_minutes} min`;
     document.getElementById('pp-fill').style.width=pct+'%';
-    document.getElementById('sb-sub').textContent=`${d.used_minutes} / ${d.limit_minutes} мин`;
+    document.getElementById('sb-sub').textContent=`${d.used_minutes} / ${d.limit_minutes} min`;
   } catch{}
 }
 
@@ -1185,7 +1185,7 @@ function showErr(id,msg) { const e=document.getElementById(id); e.textContent=ms
 function hideEl(id) { document.getElementById(id).style.display='none'; }
 function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function fmtDate(iso) {
-  try { const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
+  try { const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
   catch { return ''; }
 }
 </script>

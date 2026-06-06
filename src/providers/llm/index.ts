@@ -1,16 +1,16 @@
 import { LLMProvider } from "../../types";
-import { OpenRouterLLMProvider } from "./openrouter.provider";
 import { GroqLLMProvider } from "./groq.provider";
+import { OpenRouterLLMProvider } from "./openrouter.provider";
 
 export function createLLMProvider(name: string, apiKey: string): LLMProvider {
   switch (name.toLowerCase()) {
-    case "openrouter":
-      return new OpenRouterLLMProvider(apiKey);
     case "groq":
       return new GroqLLMProvider(apiKey);
+    case "openrouter":
+      return new OpenRouterLLMProvider(apiKey);
     default:
-      throw new Error(`Unknown LLM provider: ${name}`);
+      throw new Error(`Unknown LLM provider: "${name}". Available: groq, openrouter`);
   }
 }
 
-export { OpenRouterLLMProvider, GroqLLMProvider };
+export { GroqLLMProvider, OpenRouterLLMProvider };
