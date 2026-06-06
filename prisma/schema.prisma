@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  usedSeconds  Int      @default(0)
+  createdAt    DateTime @default(now())
+  jobs         Job[]
+}
+
+model Job {
+  id              String   @id @default(cuid())
+  userId          String
+  status          String   @default("uploaded")
+  filePath        String
+  originalName    String   @default("")
+  durationSeconds Int      @default(0)
+  transcript      String?
+  report          String?
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
+}

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AudioMind</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Tokens ───────────────────────────────── */
+    :root {
+      --bg:       #f7f8fc;
+      --surface:  #ffffff;
+      --border:   #e4e7f0;
+      --accent:   #5b54f0;
+      --text:     #111827;
+      --text2:    #6b7280;
+      --text3:    #9ca3af;
+      --red:      #dc2626;
+      --green:    #16a34a;
+      --sidebar:  #ffffff;
+      --sidebar-w: 220px;
+      --sidebar-col: 48px;
+      --shadow:   0 1px 4px rgba(0,0,0,0.07);
+      --shadow-md:0 4px 20px rgba(0,0,0,0.09);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:      #0f1117;
+        --surface: #181b26;
+        --border:  #272b3d;
+        --accent:  #6c63ff;
+        --text:    #f0f2f8;
+        --text2:   #8b92a8;
+        --text3:   #555d77;
+        --red:     #f87171;
+        --green:   #34d399;
+        --sidebar: #13151f;
+        --shadow:  0 1px 4px rgba(0,0,0,0.3);
+        --shadow-md:0 4px 24px rgba(0,0,0,0.4);
+      }
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ══════════════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════════════ */
+    #sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+      transition: width .2s ease, min-width .2s ease;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    #sidebar.collapsed {
+      width: var(--sidebar-col);
+      min-width: var(--sidebar-col);
+    }
+    /* hover expand — only the thin strip triggers it */
+    #sidebar.collapsed:hover {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* hide labels when collapsed (not hovered) */
+    #sidebar.collapsed:not(:hover) .sb-label,
+    #sidebar.collapsed:not(:hover) .sb-item-text,
+    #sidebar.collapsed:not(:hover) .sb-logo-text,
+    #sidebar.collapsed:not(:hover) .sb-profile-info,
+    #sidebar.collapsed:not(:hover) .sb-section-title,
+    #sidebar.collapsed:not(:hover) .sb-empty {
+      opacity: 0; max-width: 0; overflow: hidden; white-space: nowrap;
+      pointer-events: none; transition: none;
+    }
+
+    /* ── Sidebar header ── */
+    .sb-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 12px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sb-logo-icon {
+      width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: white;
+    }
+    .sb-logo-text {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      white-space: nowrap; transition: opacity .15s, max-width .15s;
+    }
+    .sb-collapse {
+      margin-left: auto; flex-shrink: 0;
+      width: 22px; height: 22px; border-radius: 5px;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--text3);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; transition: background .15s, color .15s, transform .2s;
+    }
+    .sb-collapse:hover { background: var(--border); color: var(--text); }
+    #sidebar.collapsed .sb-collapse { transform: rotate(180deg); }
+
+    /* ── Profile row ── */
+    .sb-profile {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 12px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s; flex-shrink: 0;
+    }
+    .sb-profile:hover { background: var(--bg); }
+    .sb-avatar {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .sb-avatar.guest { background: var(--border); color: var(--text3); }
+    .sb-profile-info { flex: 1; min-width: 0; overflow: hidden; transition: opacity .15s, max-width .15s; }
+    .sb-profile-name { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sb-profile-sub  { font-size: 11px; color: var(--text3); }
+
+    /* ── Nav item (New upload) ── */
+    .sb-nav {
+      padding: 8px 6px; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sb-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 8px; border-radius: 6px; cursor: pointer;
+      transition: background .13s; overflow: hidden;
+    }
+    .sb-item:hover { background: var(--bg); }
+    .sb-item-icon {
+      width: 20px; height: 20px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: var(--text2);
+    }
+    .sb-item-text {
+      font-size: 13px; color: var(--text2); white-space: nowrap;
+      transition: opacity .15s, max-width .15s;
+    }
+    .sb-item:hover .sb-item-text { color: var(--text); }
+
+    /* ── History ── */
+    .sb-section-title {
+      font-size: 10px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .08em;
+      padding: 12px 12px 4px;
+      transition: opacity .15s, max-width .15s;
+    }
+    #jobs-list { flex: 1; overflow-y: auto; padding: 2px 6px 8px; }
+    #jobs-list::-webkit-scrollbar { width: 3px; }
+    #jobs-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .job-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px; border-radius: 6px; cursor: pointer;
+      transition: background .13s; margin-bottom: 1px; overflow: hidden;
+    }
+    .job-row:hover { background: var(--bg); }
+    .job-row.active { background: var(--bg); }
+    .job-row.active .job-row-name { color: var(--accent); font-weight: 600; }
+
+    .job-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-done       { background: var(--green); }
+    .dot-error      { background: var(--red); }
+    .dot-processing { background: #f59e0b; animation: blink 1.4s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .job-row-info { flex: 1; min-width: 0; transition: opacity .15s, max-width .15s; }
+    .job-row-name { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .job-row-date { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .sb-empty { padding: 16px 12px; font-size: 12px; color: var(--text3); text-align: center; transition: opacity .15s, max-width .15s; }
+
+    /* ══════════════════════════════════════════
+       CENTER — state machine
+    ══════════════════════════════════════════ */
+    #center {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 24px;
+      overflow-y: auto;
+    }
+    #center::-webkit-scrollbar { width: 5px; }
+    #center::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* shared card wrapper */
+    .state-card {
+      width: 100%; max-width: 520px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── State 1: Idle (upload) ── */
+    #state-idle { display: flex; }
+    #state-idle.hidden,
+    #state-processing.hidden,
+    #state-done.hidden { display: none; }
+
+    .upload-zone {
+      width: 100%;
+      padding: 52px 40px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      border-radius: 16px;
+      transition: background .18s;
+    }
+    .upload-zone:hover { background: rgba(91,84,240,.03); }
+    .upload-zone.drag-over { background: rgba(91,84,240,.05); border-color: var(--accent); }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .uz-icon {
+      width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 16px;
+      background: rgba(91,84,240,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .uz-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+    .uz-sub   { font-size: 13px; color: var(--text2); line-height: 1.55; }
+    .uz-sub b { color: var(--accent); font-weight: 500; }
+    .uz-formats {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin-top: 20px; flex-wrap: wrap;
+    }
+    .uz-fmt {
+      font-size: 11px; color: var(--text3);
+      padding: 2px 7px; border-radius: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+    }
+    .uz-limit {
+      font-size: 11px; color: var(--text2); font-weight: 500;
+      padding: 2px 9px; border-radius: 4px;
+      background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.2);
+    }
+
+    #upload-error {
+      display: none; margin: 0 20px 16px;
+      padding: 9px 13px; border-radius: 8px;
+      background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.18);
+      color: var(--red); font-size: 12px;
+    }
+
+    /* ── State 2: Processing ── */
+    #state-processing {
+      flex-direction: column;
+      padding: 32px 32px 28px;
+    }
+    .proc-file {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+    }
+    .proc-file-icon {
+      width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+      background: rgba(91,84,240,.08);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .proc-file-name { font-size: 15px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+    .proc-file-size { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+    /* progress bar */
+    .proc-bar-wrap { margin-bottom: 14px; }
+    .proc-bar-track {
+      height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+    }
+    .proc-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: var(--accent);
+      width: 0%; transition: width .5s ease;
+    }
+    .proc-bar-fill.indeterminate {
+      width: 40%;
+      animation: indeterminate 1.6s ease-in-out infinite;
+    }
+    @keyframes indeterminate {
+      0%   { transform: translateX(-120%); }
+      100% { transform: translateX(320%); }
+    }
+
+    /* 3-step progress text */
+    .proc-steps {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text3);
+    }
+    .proc-step { display: flex; align-items: center; gap: 5px; }
+    .proc-step.done   { color: var(--green); }
+    .proc-step.active { color: var(--accent); font-weight: 600; }
+    .proc-sep { color: var(--border); font-size: 10px; }
+
+    .proc-status { font-size: 13px; color: var(--text2); margin-top: 8px; }
+
+    /* ── State 3: Done (summary preview) ── */
+    #state-done {
+      flex-direction: column;
+    }
+    .done-header {
+      padding: 20px 24px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .done-filename {
+      font-size: 13px; color: var(--text3); overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; flex: 1;
+    }
+    .done-badge {
+      font-size: 11px; font-weight: 600; color: var(--green);
+      background: rgba(22,163,74,.08); border: 1px solid rgba(22,163,74,.2);
+      padding: 2px 9px; border-radius: 99px; flex-shrink: 0;
+    }
+    .done-summary {
+      padding: 14px 24px 20px;
+      font-size: 14px; line-height: 1.72; color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Insight grid */
+    .insight-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: var(--border);
+    }
+    .insight-cell {
+      background: var(--surface);
+      padding: 14px 18px;
+    }
+    .insight-cell:nth-child(3) { border-radius: 0 0 0 0; }
+    .insight-cell:last-child   { border-radius: 0 0 16px 0; }
+    .insight-cell:nth-child(3) { border-radius: 0 0 0 16px; }
+    .ic-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin-bottom: 7px; }
+
+    .sentiment-tag {
+      display: inline-block; font-size: 12px; font-weight: 600;
+      padding: 3px 10px; border-radius: 5px;
+    }
+    .sent-positive { background: rgba(22,163,74,.09);  color: var(--green); }
+    .sent-neutral  { background: rgba(107,114,128,.09); color: var(--text2); }
+    .sent-negative { background: rgba(220,38,38,.09);  color: var(--red);   }
+
+    .topics-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+    .topic-chip  {
+      font-size: 11px; color: var(--text2);
+      padding: 2px 7px; border-radius: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+    }
+
+    .actions-mini { display: flex; flex-direction: column; gap: 4px; }
+    .action-mini  { font-size: 12px; color: var(--text2); display: flex; gap: 6px; align-items: flex-start; line-height: 1.45; }
+    .action-mini::before { content: '·'; color: var(--accent); font-size: 16px; line-height: 1; flex-shrink: 0; margin-top: -1px; }
+
+    /* transcript collapsed */
+    .transcript-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 18px; cursor: pointer;
+      border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--text2);
+      user-select: none; transition: background .13s;
+    }
+    .transcript-toggle:hover { background: var(--bg); border-radius: 0 0 16px 16px; }
+    .transcript-toggle.open  { border-radius: 0; }
+    .tt-chevron { font-size: 10px; color: var(--text3); transition: transform .2s; }
+    .transcript-toggle.open .tt-chevron { transform: rotate(180deg); }
+
+    .transcript-body {
+      display: none; padding: 0 18px 16px;
+      font-size: 12px; line-height: 1.75; color: var(--text2);
+      max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+      border-radius: 0 0 16px 16px;
+    }
+    .transcript-body::-webkit-scrollbar { width: 3px; }
+    .transcript-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* View full / New upload row */
+    .done-actions {
+      display: flex; gap: 8px;
+      padding: 14px 18px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-primary {
+      flex: 1; padding: 8px 16px;
+      background: var(--accent); color: white;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .88; }
+    .btn-secondary {
+      padding: 8px 16px;
+      background: transparent; color: var(--text2);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    .btn-secondary:hover { border-color: var(--text3); color: var(--text); }
+
+    /* ══════════════════════════════════════════
+       RIGHT PANEL (full analysis)
+    ══════════════════════════════════════════ */
+    #right-panel {
+      width: 300px; min-width: 300px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: none; flex-direction: column;
+      overflow-y: auto; padding: 20px 16px;
+      gap: 12px;
+    }
+    #right-panel.visible { display: flex; }
+    #right-panel::-webkit-scrollbar { width: 3px; }
+    #right-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .rp-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text3);
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    }
+    .rp-section { padding: 0; }
+    .rp-label   { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text3); margin-bottom: 7px; }
+    .rp-summary { font-size: 13px; line-height: 1.72; color: var(--text); }
+
+    .rp-transcript {
+      font-size: 12px; line-height: 1.75; color: var(--text2);
+      max-height: 280px; overflow-y: auto; white-space: pre-wrap;
+    }
+    .rp-transcript::-webkit-scrollbar { width: 3px; }
+    .rp-transcript::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .rp-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    .rp-actions { display: flex; flex-direction: column; gap: 5px; }
+    .rp-action  { display: flex; gap: 7px; align-items: flex-start; font-size: 12px; color: var(--text2); line-height: 1.5; }
+    .rp-action::before { content: '→'; color: var(--accent); font-size: 12px; flex-shrink: 0; }
+
+    /* ══════════════════════════════════════════
+       PROFILE POPUP
+    ══════════════════════════════════════════ */
+    #profile-popup {
+      display: none; position: fixed;
+      left: calc(var(--sidebar-w) + 8px);
+      z-index: 200; width: 230px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+    #profile-popup.visible { display: block; }
+
+    .pp-head {
+      padding: 14px 14px 11px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pp-avatar {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; margin-bottom: 8px;
+    }
+    .pp-email { font-size: 13px; font-weight: 600; color: var(--text); }
+    .pp-body  { padding: 12px 14px; }
+    .pp-usage-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+    .pp-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+    .pp-fill  { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
+    .pp-logout {
+      width: 100%; padding: 7px 12px;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 7px; color: var(--red);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .15s, border-color .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .pp-logout:hover { background: rgba(220,38,38,.06); border-color: var(--red); }
+
+    /* ══════════════════════════════════════════
+       AUTH MODAL
+    ══════════════════════════════════════════ */
+    #auth-overlay {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.4); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    #auth-overlay.open { display: flex; }
+
+    #auth-modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px;
+      width: 100%; max-width: 340px;
+      box-shadow: var(--shadow-md);
+      animation: modal-in .18s ease;
+    }
+    @keyframes modal-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    .am-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+    .am-logo-icon {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: var(--accent); color: white;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .am-logo-text { font-size: 15px; font-weight: 700; }
+    .am-title { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+    .am-sub   { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
+
+    .am-tabs {
+      display: flex; gap: 3px; margin-bottom: 16px;
+      background: var(--bg); border-radius: 8px; padding: 3px;
+      border: 1px solid var(--border);
+    }
+    .am-tab {
+      flex: 1; padding: 6px; background: transparent; border: none;
+      border-radius: 6px; color: var(--text2); font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: all .15s;
+    }
+    .am-tab.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--shadow); }
+
+    .am-field { margin-bottom: 12px; }
+    .am-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 4px; display: block; }
+    .am-input {
+      width: 100%; padding: 9px 11px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 13px;
+      outline: none; transition: border-color .15s;
+    }
+    .am-input:focus { border-color: var(--accent); }
+
+    #auth-submit {
+      width: 100%; padding: 9px;
+      background: var(--accent); color: white;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity .15s; margin-top: 2px;
+    }
+    #auth-submit:hover    { opacity: .88; }
+    #auth-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+    .am-error {
+      display: none; margin-top: 9px;
+      padding: 7px 10px; border-radius: 7px;
+      background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.18);
+      color: var(--red); font-size: 12px;
+    }
+
+    /* ── Misc ── */
+    @media (max-width: 760px) {
+      #right-panel { display: none !important; }
+      #sidebar { display: none; }
+      #center { padding: 16px; justify-content: flex-start; padding-top: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════
+     SIDEBAR
+════════════════════ -->
+<aside id="sidebar">
+  <div class="sb-header">
+    <div class="sb-logo-icon">🎙</div>
+    <span class="sb-logo-text">AudioMind</span>
+    <button class="sb-collapse" onclick="toggleSidebar()" title="Свернуть">◀</button>
+  </div>
+
+  <div class="sb-profile" onclick="handleProfileClick(event)">
+    <div class="sb-avatar guest" id="sb-avatar">?</div>
+    <div class="sb-profile-info">
+      <div class="sb-profile-name" id="sb-name">Не вошли</div>
+      <div class="sb-profile-sub"  id="sb-sub">Нажмите для входа</div>
+    </div>
+  </div>
+
+  <div class="sb-nav">
+    <div class="sb-item" onclick="handleNewUpload()">
+      <div class="sb-item-icon">＋</div>
+      <span class="sb-item-text">Новая загрузка</span>
+    </div>
+  </div>
+
+  <div class="sb-section-title">История</div>
+  <div id="jobs-list">
+    <div class="sb-empty">Нет загрузок</div>
+  </div>
+</aside>
+
+<!-- ════════════════════
+     CENTER
+════════════════════ -->
+<div id="center">
+
+  <!-- State 1: Idle -->
+  <div class="state-card" id="state-idle">
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept=".mp3,.wav,.m4a,.ogg,.flac"/>
+      <div class="uz-icon">🎵</div>
+      <div class="uz-title">Загрузите аудио для анализа</div>
+      <div class="uz-sub">
+        Перетащите файл или <b>выберите вручную</b><br>
+        Анализ начнётся автоматически
+      </div>
+      <div class="uz-formats">
+        <span class="uz-fmt">mp3</span>
+        <span class="uz-fmt">wav</span>
+        <span class="uz-fmt">m4a</span>
+        <span class="uz-fmt">ogg</span>
+        <span class="uz-fmt">flac</span>
+        <span class="uz-limit">⏱ не более 10 мин на файл</span>
+      </div>
+    </div>
+    <div id="upload-error"></div>
+  </div>
+
+  <!-- State 2: Processing -->
+  <div class="state-card" id="state-processing" style="display:none">
+    <div class="proc-file">
+      <div class="proc-file-icon">🎵</div>
+      <div>
+        <div class="proc-file-name" id="proc-name">файл.mp3</div>
+        <div class="proc-file-size" id="proc-size"></div>
+      </div>
+    </div>
+
+    <div class="proc-bar-wrap">
+      <div class="proc-bar-track">
+        <div class="proc-bar-fill indeterminate" id="proc-bar"></div>
+      </div>
+    </div>
+
+    <div class="proc-steps">
+      <div class="proc-step done" id="pstep-upload">📤 Загружен</div>
+      <div class="proc-sep">›</div>
+      <div class="proc-step" id="pstep-transcribe">🎙 Транскрипция</div>
+      <div class="proc-sep">›</div>
+      <div class="proc-step" id="pstep-analyze">🤖 Анализ</div>
+    </div>
+    <div class="proc-status" id="proc-status">Обрабатываем аудио…</div>
+  </div>
+
+  <!-- State 3: Done -->
+  <div class="state-card" id="state-done" style="display:none">
+    <div class="done-header">
+      <div class="done-filename" id="done-filename"></div>
+      <div class="done-badge">✓ Готово</div>
+    </div>
+    <div class="done-summary" id="done-summary"></div>
+
+    <div class="insight-grid">
+      <div class="insight-cell">
+        <div class="ic-label">Тональность</div>
+        <div id="done-sentiment"></div>
+      </div>
+      <div class="insight-cell">
+        <div class="ic-label">Темы</div>
+        <div class="topics-wrap" id="done-topics"></div>
+      </div>
+      <div class="insight-cell" style="grid-column:1/-1; border-radius:0 0 0 0;">
+        <div class="ic-label">Задачи</div>
+        <div class="actions-mini" id="done-actions"></div>
+      </div>
+    </div>
+
+    <div class="transcript-toggle" id="tt-toggle" onclick="toggleTranscript()">
+      <span>Транскрипт</span>
+      <span class="tt-chevron">▼</span>
+    </div>
+    <div class="transcript-body" id="tt-body"></div>
+
+    <div class="done-actions">
+      <button class="btn-primary" onclick="openFullAnalysis()">Полный анализ →</button>
+      <button class="btn-secondary" onclick="resetToIdle()">Новый файл</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════
+     RIGHT PANEL
+════════════════════ -->
+<div id="right-panel">
+  <div class="rp-title">Полный анализ</div>
+
+  <div class="rp-section">
+    <div class="rp-label">Резюме</div>
+    <div class="rp-summary" id="rp-summary"></div>
+  </div>
+
+  <hr class="rp-divider"/>
+
+  <div class="rp-section">
+    <div class="rp-label">Тональность</div>
+    <div id="rp-sentiment"></div>
+  </div>
+
+  <div class="rp-section">
+    <div class="rp-label">Темы</div>
+    <div class="topics-wrap" id="rp-topics"></div>
+  </div>
+
+  <div class="rp-section">
+    <div class="rp-label">Задачи</div>
+    <div class="rp-actions" id="rp-actions"></div>
+  </div>
+
+  <hr class="rp-divider"/>
+
+  <div class="rp-section">
+    <div class="rp-label">Транскрипт</div>
+    <div class="rp-transcript" id="rp-transcript"></div>
+  </div>
+</div>
+
+<!-- ════════════════════
+     PROFILE POPUP
+════════════════════ -->
+<div id="profile-popup">
+  <div class="pp-head">
+    <div class="pp-avatar" id="pp-avatar">?</div>
+    <div class="pp-email" id="pp-email">—</div>
+  </div>
+  <div class="pp-body">
+    <div class="pp-usage-row">
+      <span>Использовано</span>
+      <span id="pp-usage">0 / 30 мин</span>
+    </div>
+    <div class="pp-track">
+      <div class="pp-fill" id="pp-fill" style="width:0%"></div>
+    </div>
+    <button class="pp-logout" onclick="logout()">Выйти</button>
+  </div>
+</div>
+
+<!-- ════════════════════
+     AUTH MODAL
+════════════════════ -->
+<div id="auth-overlay">
+  <div id="auth-modal">
+    <div class="am-logo">
+      <div class="am-logo-icon">🎙</div>
+      <span class="am-logo-text">AudioMind</span>
+    </div>
+    <div class="am-title" id="am-title">С возвращением</div>
+    <div class="am-sub"   id="am-sub">Войдите, чтобы начать анализ</div>
+
+    <div class="am-tabs">
+      <button class="am-tab active" id="tab-login"    onclick="switchTab('login')">Войти</button>
+      <button class="am-tab"        id="tab-register" onclick="switchTab('register')">Регистрация</button>
+    </div>
+
+    <div class="am-field">
+      <label class="am-label" for="am-email">Email</label>
+      <input class="am-input" type="email" id="am-email" placeholder="you@example.com"/>
+    </div>
+    <div class="am-field">
+      <label class="am-label" for="am-pass">Пароль</label>
+      <input class="am-input" type="password" id="am-pass" placeholder="••••••••"/>
+    </div>
+    <button id="auth-submit" onclick="handleAuth()">Войти</button>
+    <div class="am-error" id="am-error"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let token        = localStorage.getItem('at') || null;
+let authTab      = 'login';
+let polling      = null;
+let pollStart    = null;
+let popupOpen    = false;
+let pendingFile  = null;
+let jobCache     = {};
+let currentJob   = null;
+let sbCollapsed  = localStorage.getItem('sb_col') === '1';
+
+const POLL_MS    = 3000;
+const WARN_MS    = 5  * 60 * 1000;
+const STOP_MS    = 10 * 60 * 1000;
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+(function() {
+  if (sbCollapsed) document.getElementById('sidebar').classList.add('collapsed');
+  setupDrop();
+  document.getElementById('file-input').addEventListener('change', onFile);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && isAuthOpen()) handleAuth();
+    if (e.key === 'Escape') {
+      if (popupOpen) { closePopup(); return; }
+      if (isAuthOpen()) { cancelPending(); hideAuth(); }
+    }
+  });
+  document.addEventListener('click', e => {
+    if (popupOpen &&
+        !document.getElementById('profile-popup').contains(e.target) &&
+        !document.querySelector('.sb-profile').contains(e.target))
+      closePopup();
+    if (e.target === document.getElementById('auth-overlay')) { cancelPending(); hideAuth(); }
+  });
+
+  if (token) { updateSidebar(); refreshUsage(); loadHistory(); }
+})();
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  sbCollapsed = !sbCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed', sbCollapsed);
+  localStorage.setItem('sb_col', sbCollapsed ? '1' : '0');
+  if (popupOpen) repositionPopup();
+}
+
+// ── Drop zone ──────────────────────────────────────────────────────────────
+function setupDrop() {
+  const z = document.getElementById('upload-zone');
+  z.addEventListener('dragover',  e => { e.preventDefault(); z.classList.add('drag-over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('drag-over'));
+  z.addEventListener('drop', e => {
+    e.preventDefault(); z.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) { document.getElementById('file-input').files = e.dataTransfer.files; onFile(); }
+  });
+}
+
+function onFile() {
+  const f = document.getElementById('file-input').files[0];
+  if (!f) return;
+  if (!token) { pendingFile = f; showAuth(); return; }
+  upload(f);
+}
+
+function cancelPending() { pendingFile = null; document.getElementById('file-input').value = ''; }
+
+function handleNewUpload() {
+  if (!token) { showAuth(); return; }
+  resetToIdle();
+  setTimeout(() => document.getElementById('file-input').click(), 120);
+}
+
+// ── Upload ─────────────────────────────────────────────────────────────────
+async function upload(file) {
+  hideEl('upload-error');
+  setStateProcessing(file);
+
+  const fd = new FormData();
+  fd.append('audio', file);
+  let data;
+  try {
+    const r = await fetch('/jobs', { method:'POST', headers:{Authorization:'Bearer '+token}, body:fd });
+    data = await r.json();
+    if (!r.ok) throw new Error(data.message || 'Ошибка загрузки');
+  } catch(e) {
+    setStateIdle();
+    showErr('upload-error', e.message);
+    return;
+  }
+
+  currentJob = { id: data.jobId, filename: file.name };
+  addToSidebar({ id: data.jobId, status: 'processing', filename: file.name, createdAt: new Date().toISOString() });
+  refreshUsage();
+  startPoll(data.jobId, file.name);
+}
+
+// ── State transitions ──────────────────────────────────────────────────────
+function setStateIdle() {
+  show('state-idle'); hide('state-processing'); hide('state-done');
+  document.getElementById('file-input').value = '';
+}
+
+function setStateProcessing(file) {
+  hide('state-idle'); show('state-processing'); hide('state-done');
+  document.getElementById('proc-name').textContent = file.name;
+  document.getElementById('proc-size').textContent = (file.size/1024/1024).toFixed(2)+' МБ';
+  document.getElementById('proc-status').textContent = 'Загрузка завершена, запускаем транскрипцию…';
+  setStep('upload');
+}
+
+function setStateDone(job) {
+  hide('state-idle'); hide('state-processing'); show('state-done');
+  const r = job.report || {};
+  document.getElementById('done-filename').textContent = job.filename || '';
+  document.getElementById('done-summary').textContent  = r.summary || '—';
+
+  const sentMap = {positive:'Позитивная',neutral:'Нейтральная',negative:'Негативная'};
+  const s = r.sentiment || 'neutral';
+  document.getElementById('done-sentiment').innerHTML =
+    `<span class="sentiment-tag sent-${s}">${sentMap[s]||s}</span>`;
+
+  document.getElementById('done-topics').innerHTML =
+    (r.topics||[]).length ? r.topics.map(t=>`<span class="topic-chip">${esc(t)}</span>`).join('') :
+    '<span style="color:var(--text3);font-size:11px">—</span>';
+
+  document.getElementById('done-actions').innerHTML =
+    (r.action_items||[]).length ? r.action_items.map(a=>`<div class="action-mini">${esc(a)}</div>`).join('') :
+    '<span style="color:var(--text3);font-size:12px">Нет задач</span>';
+
+  document.getElementById('tt-body').textContent = job.transcript || '—';
+}
+
+function resetToIdle() {
+  stopPoll();
+  setStateIdle();
+  document.querySelectorAll('.job-row').forEach(e=>e.classList.remove('active'));
+  document.getElementById('right-panel').classList.remove('visible');
+  currentJob = null;
+}
+
+// ── Step indicator ─────────────────────────────────────────────────────────
+function setStep(step) {
+  // step: 'upload' | 'transcribe' | 'analyze'
+  const steps = ['upload','transcribe','analyze'];
+  steps.forEach(s => {
+    const el = document.getElementById('pstep-'+s);
+    el.classList.remove('done','active');
+    const idx  = steps.indexOf(s);
+    const cur  = steps.indexOf(step);
+    if (idx < cur)  el.classList.add('done');
+    if (idx === cur) el.classList.add('active');
+  });
+}
+
+// ── Polling ────────────────────────────────────────────────────────────────
+function startPoll(jobId, filename) {
+  stopPoll();
+  pollStart = Date.now();
+  polling = setInterval(() => poll(jobId, filename), POLL_MS);
+  poll(jobId, filename);
+}
+
+function stopPoll() {
+  if (polling) { clearInterval(polling); polling = null; }
+  pollStart = null;
+}
+
+async function poll(jobId, filename) {
+  const elapsed = Date.now() - (pollStart||Date.now());
+
+  if (elapsed > STOP_MS) {
+    stopPoll();
+    setStateIdle();
+    showErr('upload-error', 'Обработка превысила 10 минут. Попробуйте позже.');
+    return;
+  }
+  if (elapsed > WARN_MS) {
+    document.getElementById('proc-status').textContent = 'Обработка занимает больше времени, чем обычно…';
+  }
+
+  try {
+    const r = await fetch('/jobs/'+jobId, { headers:{Authorization:'Bearer '+token} });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message);
+
+    d.filename = filename;
+    jobCache[jobId] = d;
+    updateSidebarDot(jobId, d.status);
+
+    if (d.status === 'processing')  { setStep('transcribe'); document.getElementById('proc-status').textContent = 'Транскрибируем речь…'; }
+    if (d.status === 'transcribed') { setStep('analyze');    document.getElementById('proc-status').textContent = 'Анализируем с помощью AI…'; }
+
+    if (d.status === 'done') {
+      stopPoll();
+      setStateDone(d);
+      refreshUsage();
+    }
+    if (d.status === 'error') {
+      stopPoll();
+      setStateIdle();
+      showErr('upload-error', d.errorMessage || 'Ошибка обработки');
+    }
+  } catch(e) {
+    stopPoll();
+    setStateIdle();
+    showErr('upload-error', 'Ошибка соединения: '+e.message);
+  }
+}
+
+// ── Transcript toggle ──────────────────────────────────────────────────────
+function toggleTranscript() {
+  const body = document.getElementById('tt-body');
+  const tog  = document.getElementById('tt-toggle');
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  tog.classList.toggle('open', !open);
+}
+
+// ── Right panel ────────────────────────────────────────────────────────────
+function openFullAnalysis() {
+  if (!currentJob) return;
+  const job = jobCache[currentJob.id];
+  if (!job) return;
+  fillRightPanel(job);
+  document.getElementById('right-panel').classList.add('visible');
+}
+
+function fillRightPanel(job) {
+  const r = job.report || {};
+  document.getElementById('rp-summary').textContent = r.summary || '—';
+  document.getElementById('rp-transcript').textContent = job.transcript || '—';
+
+  const sentMap = {positive:'Позитивная',neutral:'Нейтральная',negative:'Негативная'};
+  const s = r.sentiment||'neutral';
+  document.getElementById('rp-sentiment').innerHTML =
+    `<span class="sentiment-tag sent-${s}">${sentMap[s]||s}</span>`;
+
+  document.getElementById('rp-topics').innerHTML =
+    (r.topics||[]).map(t=>`<span class="topic-chip">${esc(t)}</span>`).join('') ||
+    '<span style="color:var(--text3);font-size:11px">—</span>';
+
+  document.getElementById('rp-actions').innerHTML =
+    (r.action_items||[]).map(a=>`<div class="rp-action">${esc(a)}</div>`).join('') ||
+    '<span style="color:var(--text3);font-size:12px">Нет задач</span>';
+}
+
+// ── Sidebar jobs ───────────────────────────────────────────────────────────
+function addToSidebar(job) {
+  const list = document.getElementById('jobs-list');
+  list.querySelector('.sb-empty')?.remove();
+  document.getElementById('jr-'+job.id)?.remove();
+
+  const el = document.createElement('div');
+  el.className = 'job-row active';
+  el.id = 'jr-'+job.id;
+  el.onclick = () => openFromSidebar(job.id, job.filename);
+  el.innerHTML = `
+    <div class="job-dot dot-${job.status}"></div>
+    <div class="job-row-info">
+      <div class="job-row-name">${esc(job.filename||job.id.slice(0,10))}</div>
+      <div class="job-row-date">${fmtDate(job.createdAt)}</div>
+    </div>`;
+  document.querySelectorAll('.job-row').forEach(e=>e.classList.remove('active'));
+  list.prepend(el);
+}
+
+function updateSidebarDot(id, status) {
+  const el = document.getElementById('jr-'+id);
+  if (el) el.querySelector('.job-dot').className = 'job-dot dot-'+status;
+}
+
+async function loadHistory() {
+  if (!token) return;
+  try {
+    const r = await fetch('/jobs?limit=50', { headers:{Authorization:'Bearer '+token} });
+    if (!r.ok) return;
+    const {jobs} = await r.json();
+    const list = document.getElementById('jobs-list');
+    list.innerHTML = '';
+    if (!jobs.length) { list.innerHTML='<div class="sb-empty">Нет загрузок</div>'; return; }
+    jobs.forEach(j => {
+      jobCache[j.id] = j;
+      const el = document.createElement('div');
+      el.className = 'job-row'; el.id = 'jr-'+j.id;
+      el.onclick = () => openFromSidebar(j.id, j.filename);
+      el.innerHTML = `
+        <div class="job-dot dot-${j.status}"></div>
+        <div class="job-row-info">
+          <div class="job-row-name">${esc(j.filename||j.id)}</div>
+          <div class="job-row-date">${fmtDate(j.createdAt)}</div>
+        </div>`;
+      list.appendChild(el);
+    });
+  } catch {}
+}
+
+async function openFromSidebar(jobId, filename) {
+  document.querySelectorAll('.job-row').forEach(e=>e.classList.remove('active'));
+  document.getElementById('jr-'+jobId)?.classList.add('active');
+
+  const cached = jobCache[jobId];
+  if (cached && cached.status === 'done') {
+    cached.filename = filename;
+    currentJob = { id: jobId, filename };
+    setStateDone(cached);
+    document.getElementById('right-panel').classList.remove('visible');
+    return;
+  }
+
+  // fetch fresh
+  try {
+    const r = await fetch('/jobs/'+jobId, { headers:{Authorization:'Bearer '+token} });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message);
+    d.filename = filename;
+    jobCache[jobId] = d;
+    currentJob = { id: jobId, filename };
+
+    if (d.status === 'done') { setStateDone(d); document.getElementById('right-panel').classList.remove('visible'); }
+    else if (d.status === 'error') { setStateIdle(); showErr('upload-error', d.errorMessage||'Ошибка обработки'); }
+    else { setStateProcessing({name:filename,size:0}); startPoll(jobId, filename); }
+  } catch(e) { setStateIdle(); showErr('upload-error', e.message); }
+}
+
+// ── Profile popup ──────────────────────────────────────────────────────────
+function handleProfileClick(e) {
+  e.stopPropagation();
+  if (!token) { showAuth(); return; }
+  popupOpen ? closePopup() : openPopup();
+}
+
+function openPopup() {
+  popupOpen = true;
+  repositionPopup();
+  document.getElementById('profile-popup').classList.add('visible');
+  refreshUsage();
+}
+
+function repositionPopup() {
+  const sb   = document.getElementById('sidebar');
+  const w    = sb.getBoundingClientRect().width;
+  const prof = document.querySelector('.sb-profile').getBoundingClientRect();
+  const p    = document.getElementById('profile-popup');
+  p.style.left = (w + 8) + 'px';
+  p.style.top  = (prof.bottom + 6) + 'px';
+}
+
+function closePopup() {
+  popupOpen = false;
+  document.getElementById('profile-popup').classList.remove('visible');
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+function showAuth() { document.getElementById('auth-overlay').classList.add('open'); setTimeout(()=>document.getElementById('am-email').focus(),80); }
+function hideAuth() { document.getElementById('auth-overlay').classList.remove('open'); document.getElementById('am-error').style.display='none'; }
+function isAuthOpen() { return document.getElementById('auth-overlay').classList.contains('open'); }
+
+function switchTab(t) {
+  authTab = t;
+  document.getElementById('tab-login').classList.toggle('active', t==='login');
+  document.getElementById('tab-register').classList.toggle('active', t==='register');
+  document.getElementById('am-title').textContent  = t==='login' ? 'С возвращением'        : 'Создать аккаунт';
+  document.getElementById('am-sub').textContent    = t==='login' ? 'Войдите, чтобы начать анализ' : 'Бесплатно · 30 минут аудио';
+  document.getElementById('auth-submit').textContent = t==='login' ? 'Войти' : 'Создать аккаунт';
+  document.getElementById('am-error').style.display = 'none';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('am-email').value.trim();
+  const pass  = document.getElementById('am-pass').value;
+  if (!email||!pass) { showErr('am-error','Введите email и пароль'); return; }
+
+  const btn = document.getElementById('auth-submit');
+  btn.disabled=true; btn.textContent = authTab==='login' ? 'Входим…':'Создаём…';
+
+  try {
+    const r = await fetch(authTab==='login'?'/auth/login':'/auth/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email,password:pass})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message||'Ошибка');
+    token = d.token; localStorage.setItem('at',token);
+    hideAuth(); updateSidebar(); refreshUsage(); loadHistory();
+    if (pendingFile) { const f=pendingFile; pendingFile=null; upload(f); }
+  } catch(e) { showErr('am-error',e.message); }
+  finally { btn.disabled=false; btn.textContent=authTab==='login'?'Войти':'Создать аккаунт'; }
+}
+
+function logout() {
+  token=null; localStorage.removeItem('at');
+  stopPoll(); closePopup(); resetToIdle();
+  jobCache={}; pendingFile=null; currentJob=null;
+  updateSidebar();
+  document.getElementById('jobs-list').innerHTML='<div class="sb-empty">Нет загрузок</div>';
+}
+
+// ── Sidebar auth state ─────────────────────────────────────────────────────
+function updateSidebar() {
+  const av = document.getElementById('sb-avatar');
+  const nm = document.getElementById('sb-name');
+  const sb = document.getElementById('sb-sub');
+  if (token) {
+    let em='?'; try { em=JSON.parse(atob(token.split('.')[1])).email; } catch{}
+    av.textContent=em[0].toUpperCase(); av.className='sb-avatar';
+    nm.textContent=em; sb.textContent='Профиль и использование';
+    document.getElementById('pp-avatar').textContent=em[0].toUpperCase();
+    document.getElementById('pp-email').textContent=em;
+  } else {
+    av.textContent='?'; av.className='sb-avatar guest';
+    nm.textContent='Не вошли'; sb.textContent='Нажмите для входа';
+  }
+}
+
+async function refreshUsage() {
+  if (!token) return;
+  try {
+    const r = await fetch('/me/usage',{headers:{Authorization:'Bearer '+token}});
+    const d = await r.json(); if (!r.ok) return;
+    const pct = Math.min(100,(d.used_minutes/d.limit_minutes)*100).toFixed(1);
+    document.getElementById('pp-usage').textContent=`${d.used_minutes} / ${d.limit_minutes} мин`;
+    document.getElementById('pp-fill').style.width=pct+'%';
+    document.getElementById('sb-sub').textContent=`${d.used_minutes} / ${d.limit_minutes} мин`;
+  } catch{}
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+function show(id) { document.getElementById(id).style.display='flex'; }
+function hide(id) { document.getElementById(id).style.display='none'; }
+function showErr(id,msg) { const e=document.getElementById(id); e.textContent=msg; e.style.display='block'; }
+function hideEl(id) { document.getElementById(id).style.display='none'; }
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function fmtDate(iso) {
+  try { const d=new Date(iso); return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}); }
+  catch { return ''; }
+}
+</script>
+</body>
+</html>
